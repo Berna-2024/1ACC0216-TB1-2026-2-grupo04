@@ -1,0 +1,63 @@
+---
+title: "Hotel Booking Demand: Análisis de Reservas"
+author: "Grupo 03 - Fundamentos de Data Science"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+# Cargar las librerías necesarias
+library(flexdashboard)
+library(tidyverse)
+library(plotly) 
+
+# Cargar el dataset preparado usando la ruta relativa correcta
+hotel_clean <- read.csv("../data/hotel_bookings_preparado.csv")
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Pregunta 5: Reservas y Cancelaciones por Segmento de Mercado
+
+```{r}
+# Preparar datos para la Pregunta 5
+q5_data <- hotel_clean %>%
+  group_by(market_segment, is_canceled) %>%
+  summarise(total = n(), .groups = "drop")
+
+p1 <- ggplot(q5_data, aes(x = forcats::fct_reorder(market_segment, total, .fun = sum, .desc = TRUE),
+                          y = total, fill = is_canceled)) +
+  geom_col() +
+  labs(x = "Segmento de Mercado", y = "Cantidad de Reservas",
+       fill = "¿Cancelada?") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplotly(p1)
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Pregunta 6: Relación entre Anticipación (Lead Time) y Tarifa Diaria Promedio (ADR)
+
+```{r}
+# Preparar datos para la Pregunta 6 (adr > 0 y adr < 1000)
+set.seed(123)
+q6_data <- hotel_clean %>% filter(adr > 0, adr < 1000)
+q6_muestra <- q6_data %>% slice_sample(n = 10000)
+
+p2 <- ggplot(q6_data, aes(x = lead_time, y = adr)) +
+  geom_point(data = q6_muestra, aes(color = hotel), alpha = 0.3, size = 1) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "cs"),
+              color = "black", linetype = "dashed", se = FALSE) +
+  labs(x = "Anticipación de la Reserva (Días)",
+       y = "Tarifa Diaria Promedio (ADR)", color = "Tipo de Hotel") +
+  theme_minimal()
+
+ggplotly(p2)
+```
